@@ -1,0 +1,72 @@
+#!/bin/sh
+#
+# @name Gazebo Coaxial Top-Tilt (Poongsan-style)
+#
+# @type Helicopter
+# @class Copter
+#
+# Cylinder-body coaxial UAV inspired by the Poongsan drone form factor.
+# Lower rotor (CW, motor 0) is fixed to the body and always points up.
+# Upper rotor (CCW, motor 1) mounts on a 2-DOF pitch/roll gimbal.
+# Tilting only the upper rotor provides approximately half the lateral force
+# authority of tilting both, but the fixed lower rotor gives a stable
+# thrust base.  Yaw is controlled by differential RPM (CW vs CCW).
+#
+# Actuator mapping:
+#   Motor 0 (CW,  lower, fixed): EC channel 1
+#   Motor 1 (CCW, upper, tilts): EC channel 2
+#   Pitch tilt servo:            SV channel 1  (swashplate angle 0 deg)
+#   Roll tilt servo:             SV channel 2  (swashplate angle 270 deg)
+#
+
+. ${R}etc/init.d/rc.heli_defaults
+
+PX4_SIMULATOR=${PX4_SIMULATOR:=gz}
+PX4_GZ_WORLD=${PX4_GZ_WORLD:=default}
+PX4_SIM_MODEL=${PX4_SIM_MODEL:=coaxial_top_tilt}
+PX4_GZ_NO_FOLLOW=${PX4_GZ_NO_FOLLOW:=1}
+
+param set-default SIM_GZ_EN 1
+
+param set-default MAV_TYPE 4
+
+param set-default CA_AIRFRAME 12
+
+# Two swashplate-style tilt servos controlling only the upper rotor.
+# Servo 0: angle=0 deg   => pitch_coeff=cos(0)=1,    roll_coeff=sin(0)=0    -> pure pitch
+# Servo 1: angle=270 deg => pitch_coeff=cos(270)=0,  roll_coeff=sin(270)=-1 -> pure roll
+# ARM_L set to 0.5 (half of the both-tilt design) to reflect that only ~50%
+# of total thrust is vectored.
+param set-default CA_SP0_COUNT 2
+param set-default CA_SP0_ANG0 180
+param set-default CA_SP0_ARM_L0 0.5
+param set-default CA_SP0_ANG1 270
+param set-default CA_SP0_ARM_L1 0.5
+
+# Spool-up time reduced for simulation
+param set-default COM_SPOOLUP_TIME 3
+
+# Motor channels: 0=CW(lower), 1=CCW(upper)
+param set-default SIM_GZ_EC_FUNC1 101
+param set-default SIM_GZ_EC_FUNC2 102
+
+param set-default SIM_GZ_EC_MIN1 150
+param set-default SIM_GZ_EC_MIN2 150
+
+param set-default SIM_GZ_EC_MAX1 1000
+param set-default SIM_GZ_EC_MAX2 1000
+
+# Servo channels: 1=pitch tilt (servo_0), 2=roll tilt (servo_1)
+param set-default SIM_GZ_SV_FUNC1 201
+param set-default SIM_GZ_SV_FUNC2 202
+
+# Wider tilt range (±45°) to compensate for reduced lateral authority
+param set-default SIM_GZ_SV_MINA1 -45
+param set-default SIM_GZ_SV_MAXA1 45
+param set-default SIM_GZ_SV_MINA2 -45
+param set-default SIM_GZ_SV_MAXA2 45
+
+# Hover throttle: similar to dual-tilt since both motors still carry full weight
+param set-default MPC_THR_HOVER 0.75
+
+param set-default NAV_DLL_ACT 0
